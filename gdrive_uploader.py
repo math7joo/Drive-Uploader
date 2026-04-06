@@ -15,70 +15,89 @@ TOKEN_FILE = "token.json"
 CREDS_FILE = "credentials.json"
 FOLDER_ID = "1MFsIJJolZx9Aaxurxypcb-ZuVYn9vCMf"
 
-# ── Modern UI & Custom CSS ──────────────────────────────────────────────────
+# ── Page & Style ─────────────────────────────────────────────────────────────
 st.set_page_config(page_title="CloudDrop | Image Uploader", page_icon="☁️", layout="centered")
 
+# CSS المطور لإضافة الـ Card وزيادة الوضوح
 st.markdown("""
 <style>
-    /* Main App Background */
-    .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    }
-    
-    /* Title Styling */
-    .main-title {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        color: #1e3a8a;
-        text-align: center;
-        font-size: 3rem;
-        font-weight: 800;
-        margin-bottom: 0px;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .sub-title {
-        text-align: center;
-        color: #4b5563;
-        font-size: 1.1rem;
-        margin-bottom: 30px;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Helvetica+Neue:wght@400;600;800&display=swap');
 
-    /* Container Styling */
-    .upload-container {
-        background-color: white;
-        padding: 30px;
-        border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
+* {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+}
 
-    /* Button Styling */
-    .stButton > button {
-        width: 100%;
-        background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%) !important;
-        color: white !important;
-        border-radius: 12px !important;
-        border: none !important;
-        padding: 12px 0px !important;
-        font-size: 1.2rem !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
-    }
+/* 1. Main App Background */
+.stApp {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
 
-    /* Success Link Box */
-    .link-box {
-        background-color: #f0fdf4;
-        border: 2px dashed #22c55e;
-        border-radius: 15px;
-        padding: 20px;
-        text-align: center;
-        margin-top: 20px;
-    }
+/* 2. Main Container (The Card) - إضافة صندوق أبيض للعناصر */
+[data-testid="stVerticalBlock"] > div:contains("Instant Image Upload") {
+    background-color: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-top: 30px;
+}
+
+/* 3. Title Styling - تحسين الوضوح */
+.main-title {
+    color: #1e3a8a;
+    text-align: center;
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 0px;
+}
+
+.sub-title {
+    text-align: center;
+    color: #4b5563;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+/* 4. Improve specific labels/text inside the card */
+.stMarkdown h3 {
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Improve File Uploader labels */
+.stFileUploader label, .stMarkdown p {
+    color: #475569 !important;
+}
+
+/* 5. Button Styling - تحسين الزراير */
+.stButton > button {
+    width: 100%;
+    background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    border: none !important;
+    padding: 12px 0px !important;
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+}
+
+/* Success/Error Link Box */
+.success-link-box {
+    background-color: #f0fdf4;
+    border: 2px dashed #22c55e;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    margin-top: 20px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -110,20 +129,20 @@ def upload_and_share(service, file_bytes, filename, mime_type):
     return final_file["webViewLink"]
 
 # ── Main UI ──────────────────────────────────────────────────────────────────
+# وضع العنوان والعناوين الفرعية خارج الـ Card ليعطى عمق
 st.markdown('<h1 class="main-title">CloudDrop ☁️</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Instant Image Upload to Google Drive</p>', unsafe_allow_html=True)
 
 # Main Section
-with st.container():
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 📁 Upload File")
-        uploaded_file = st.file_uploader("Drop an image here", type=["png", "jpg", "jpeg", "webp"])
+col1, col2 = st.columns(2)
 
-    with col2:
-        st.markdown("### 📋 Quick Paste")
-        pasted_image = paste_image_button("Click to Paste Image")
+with col1:
+    st.markdown("### 📁 Upload File")
+    uploaded_file = st.file_uploader("Drop an image here", type=["png", "jpg", "jpeg", "webp"])
+
+with col2:
+    st.markdown("### 📋 Quick Paste")
+    pasted_image = paste_image_button("Click to Paste Image")
 
 # Process Image
 final_image_bytes = None
@@ -161,7 +180,7 @@ if final_image_bytes:
                 link = upload_and_share(service, final_image_bytes, save_name, mime_type)
                 
                 st.markdown(f'''
-                <div class="link-box">
+                <div class="success-link-box">
                     <h3 style="color: #166534; margin-top:0;">✅ Upload Successful!</h3>
                     <p style="color: #374151;"><b>Name:</b> {save_name}</p>
                     <p style="color: #374151;">Shareable Link:</p>
