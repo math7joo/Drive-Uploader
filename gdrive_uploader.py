@@ -15,26 +15,74 @@ TOKEN_FILE = "token.json"
 CREDS_FILE = "credentials.json"
 FOLDER_ID = "1MFsIJJolZx9Aaxurxypcb-ZuVYn9vCMf"
 
-# ── Page & Style ─────────────────────────────────────────────────────────────
-st.set_page_config(page_title="ارفع صورة", page_icon="☁️", layout="centered")
+# ── Modern UI & Custom CSS ──────────────────────────────────────────────────
+st.set_page_config(page_title="CloudDrop | Image Uploader", page_icon="☁️", layout="centered")
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
-* { font-family: 'Cairo', sans-serif !important; direction: rtl; }
-.stApp { background: #f5f7ff; }
-.title { text-align: center; font-size: 2rem; font-weight: 900; color: #2d3a8c; margin-bottom: 0.2rem; }
-.subtitle { text-align: center; color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
-.link-box { background: #eaffef; border: 2px solid #34c759; border-radius: 12px; padding: 1rem 1.5rem; margin-top: 1rem; text-align: center; }
-.link-label { color: #1a7a3a; font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
-.stButton > button { background: #2d3a8c !important; color: white !important; font-family: 'Cairo', sans-serif !important; font-weight: 700 !important; font-size: 1.1rem !important; border-radius: 10px !important; border: none !important; width: 100%; padding: 0.7rem !important; }
-.stButton > button:hover { background: #1a2560 !important; }
-/* تحسين شكل خانة الاسم */
-div[data-baseweb="input"] { direction: rtl; }
+    /* Main App Background */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    /* Title Styling */
+    .main-title {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: #1e3a8a;
+        text-align: center;
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 0px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .sub-title {
+        text-align: center;
+        color: #4b5563;
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+    }
+
+    /* Container Styling */
+    .upload-container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    /* Button Styling */
+    .stButton > button {
+        width: 100%;
+        background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        border: none !important;
+        padding: 12px 0px !important;
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Success Link Box */
+    .link-box {
+        background-color: #f0fdf4;
+        border: 2px dashed #22c55e;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        margin-top: 20px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Auth Function ────────────────────────────────────────────────────────────
+# ── Google Drive Auth ────────────────────────────────────────────────────────
 @st.cache_resource
 def get_drive_service():
     creds = None
@@ -45,7 +93,7 @@ def get_drive_service():
             creds.refresh(Request())
         else:
             if not os.path.exists(CREDS_FILE):
-                st.error("❌ ملف credentials.json مش موجود!")
+                st.error("Missing credentials.json file!")
                 st.stop()
             flow = InstalledAppFlow.from_client_secrets_file(CREDS_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
@@ -55,68 +103,71 @@ def get_drive_service():
 
 def upload_and_share(service, file_bytes, filename, mime_type):
     media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=mime_type, resumable=True)
-    uploaded = service.files().create(
-        body={"name": filename, "parents": [FOLDER_ID]},
-        media_body=media,
-        fields="id,webViewLink"
-    ).execute()
-    service.permissions().create(fileId=uploaded["id"], body={"type": "anyone", "role": "reader"}).execute()
-    result = service.files().get(fileId=uploaded["id"], fields="webViewLink").execute()
-    return result["webViewLink"]
+    file_metadata = {"name": filename, "parents": [FOLDER_ID]}
+    uploaded_file = service.files().create(body=file_metadata, media_body=media, fields="id,webViewLink").execute()
+    service.permissions().create(fileId=uploaded_file["id"], body={"type": "anyone", "role": "reader"}).execute()
+    final_file = service.files().get(fileId=uploaded_file["id"], fields="webViewLink").execute()
+    return final_file["webViewLink"]
 
-# ── UI ────────────────────────────────────────────────────────────────────────
-st.markdown('<div class="title">☁️ ارفع صورة على Drive</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">ارفع ملف أو الصق صورة مباشرة (Paste)</div>', unsafe_allow_html=True)
+# ── Main UI ──────────────────────────────────────────────────────────────────
+st.markdown('<h1 class="main-title">CloudDrop ☁️</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Instant Image Upload to Google Drive</p>', unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+# Main Section
+with st.container():
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 📁 Upload File")
+        uploaded_file = st.file_uploader("Drop an image here", type=["png", "jpg", "jpeg", "webp"])
 
-with col1:
-    uploaded_file = st.file_uploader("اختار صورة", type=["png", "jpg", "jpeg", "webp"])
+    with col2:
+        st.markdown("### 📋 Quick Paste")
+        pasted_image = paste_image_button("Click to Paste Image")
 
-with col2:
-    st.write("أو الصق صورة من الكليبورد")
-    pasted_image = paste_image_button("📋 اضغط هنا للصق (Paste)")
-
-# متغيرات الصورة
+# Process Image
 final_image_bytes = None
-original_name = "uploaded_image.png"
+default_name = "image_upload.png"
 mime_type = "image/png"
 
 if uploaded_file:
     final_image_bytes = uploaded_file.read()
-    original_name = uploaded_file.name
+    default_name = uploaded_file.name
     mime_type = uploaded_file.type
-    st.image(Image.open(io.BytesIO(final_image_bytes)), caption="معاينة الملف المختار", use_container_width=True)
+    st.image(Image.open(io.BytesIO(final_image_bytes)), caption="Ready to upload", use_container_width=True)
 
 elif pasted_image and pasted_image.image_data is not None:
     img_buffer = io.BytesIO()
     pasted_image.image_data.save(img_buffer, format="PNG")
     final_image_bytes = img_buffer.getvalue()
-    st.image(pasted_image.image_data, caption="معاينة الصورة الملصقة", use_container_width=True)
+    st.image(pasted_image.image_data, caption="Clipboard Image Detected", use_container_width=True)
 
-# ── الجزء الجديد: تسمية الصورة والرفع ──
+# Upload Section
 if final_image_bytes:
     st.markdown("---")
-    # خانة الاسم الجديدة
-    custom_name = st.text_input("📝 اختار اسم للصورة (اختياري)", placeholder="مثلاً: مسألة_تفاضل_1")
+    custom_name = st.text_input("🏷️ Image Name (Optional)", placeholder="e.g. math_homework_solution")
     
-    if st.button("☁️ ارفع وجيب اللينك"):
-        with st.spinner("جاري الرفع..."):
+    if st.button("🚀 UPLOAD TO DRIVE"):
+        with st.spinner("Uploading to Cloud..."):
             try:
                 service = get_drive_service()
                 
-                # تحديد الاسم النهائي
+                # Naming Logic
                 if custom_name.strip():
-                    final_name = f"{custom_name.strip()}.png"
+                    save_name = f"{custom_name.strip()}.png"
                 else:
-                    final_name = original_name
+                    save_name = default_name
                 
-                link = upload_and_share(service, final_image_bytes, final_name, mime_type)
+                link = upload_and_share(service, final_image_bytes, save_name, mime_type)
                 
-                st.markdown('<div class="link-box">', unsafe_allow_html=True)
-                st.markdown(f'<div class="link-label">✅ تم الرفع باسم: {final_name}</div>', unsafe_allow_html=True)
+                st.markdown(f'''
+                <div class="link-box">
+                    <h3 style="color: #166534; margin-top:0;">✅ Upload Successful!</h3>
+                    <p style="color: #374151;"><b>Name:</b> {save_name}</p>
+                    <p style="color: #374151;">Shareable Link:</p>
+                </div>
+                ''', unsafe_allow_html=True)
                 st.code(link, language=None)
-                st.markdown('</div>', unsafe_allow_html=True)
                 st.balloons()
             except Exception as e:
-                st.error(f"حصل خطأ: {e}")
+                st.error(f"Error: {e}")
