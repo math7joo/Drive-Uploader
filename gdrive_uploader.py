@@ -75,7 +75,8 @@ with col1:
 
 with col2:
     st.write("أو الصق صورة من الكليبورد")
-    pasted_image = paste_image_button(label="📋 اضغط هنا للصق (Paste)", errors_allowed=True)
+# السطر الجديد الأبسط
+    pasted_image = paste_image_button("📋 اضغط هنا للصق (Paste)")
 
 # تحديد أي صورة سيتم معالجتها
 final_image_bytes = None
